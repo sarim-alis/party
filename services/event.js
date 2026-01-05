@@ -31,7 +31,18 @@ export const createEvent = async (eventData) => {
     }
     throw new Error(response.data.message || "Failed to create event");
   } catch (error) {
-    throw error.response?.data?.message || error.message || "Failed to create event";
+    // Better error handling for network and validation errors
+    if (error.response) {
+      // Server responded with error status
+      const errorMessage = error.response.data?.message || error.response.data?.error || "Failed to create event";
+      throw new Error(errorMessage);
+    } else if (error.request) {
+      // Request was made but no response received
+      throw new Error("Network error. Please check your connection and try again.");
+    } else {
+      // Something else happened
+      throw new Error(error.message || "Failed to create event. Please try again.");
+    }
   }
 };
 

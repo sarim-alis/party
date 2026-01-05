@@ -66,13 +66,28 @@ export default function EventsScreen() {
     }
 
     try {
-      await createEvent(newEvent);
+      // Ensure date is properly formatted
+      const eventData = {
+        name: newEvent.name.trim(),
+        date: newEvent.date,
+        location: newEvent.location.trim(),
+        category: newEvent.category || "Party"
+      };
+
+      await createEvent(eventData);
       Toast.show({ type: "success", text1: "Success", text2: "Event created successfully!" });
       setShowAddModal(false);
       setNewEvent({ name: "", date: "", location: "", category: "Party" });
+      setSelectedDate(new Date());
       loadEvents();
     } catch (error) {
-      Toast.show({ type: "error", text1: "Error", text2: error.toString() });
+      console.error("Error creating event:", error);
+      const errorMessage = error?.message || error?.toString() || "Failed to create event. Please try again.";
+      Toast.show({ 
+        type: "error", 
+        text1: "Error", 
+        text2: errorMessage 
+      });
     }
   };
 
@@ -317,7 +332,8 @@ export default function EventsScreen() {
                 onChange={(event, date) => {
                   if (date) {
                     setSelectedDate(date);
-                    const formattedDate = date.toISOString().slice(0, 16);
+                    // Format date as ISO string for backend
+                    const formattedDate = date.toISOString();
                     setNewEvent({ ...newEvent, date: formattedDate });
                   }
                 }}
@@ -325,33 +341,22 @@ export default function EventsScreen() {
               />
             )}
             
-            {Platform.OS === "android" && (
-              <Modal transparent animationType="slide" visible={showDatePicker}>
-                <View style={eventStyles.datePickerModal}>
-                  <View style={eventStyles.datePickerContainer}>
-                    <View style={eventStyles.datePickerHeader}>
-                      <Text style={eventStyles.datePickerTitle}>Select Date & Time</Text>
-                      <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                        <Ionicons name="close" size={24} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    </View>
-                    <DateTimePicker
-                      value={selectedDate}
-                      mode="datetime"
-                      display="default"
-                      onChange={(event, date) => {
-                        if (event.type === "set" && date) {
-                          setSelectedDate(date);
-                          const formattedDate = date.toISOString().slice(0, 16);
-                          setNewEvent({ ...newEvent, date: formattedDate });
-                        }
-                        setShowDatePicker(false);
-                      }}
-                      minimumDate={new Date()}
-                    />
-                  </View>
-                </View>
-              </Modal>
+            {Platform.OS === "android" && showDatePicker && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="datetime"
+                display="default"
+                onChange={(event, date) => {
+                  setShowDatePicker(false);
+                  if (event.type === "set" && date) {
+                    setSelectedDate(date);
+                    // Format date as ISO string for backend (consistent with iOS)
+                    const formattedDate = date.toISOString();
+                    setNewEvent({ ...newEvent, date: formattedDate });
+                  }
+                }}
+                minimumDate={new Date()}
+              />
             )}
 
             <TextInput
